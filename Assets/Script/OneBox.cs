@@ -1,7 +1,6 @@
-using UnityEngine;
-using TMPro;
-using UnityEngine.UI;
 using System;
+using UnityEngine;
+using UnityEngine.UI;
 
 public class OneBox : MonoBehaviour
 {
@@ -12,11 +11,32 @@ public class OneBox : MonoBehaviour
 
     void Start()
     {
-        button.onClick.AddListener(onClick);
+        if (button == null)
+        {
+            button = GetComponent<Button>();
+        }
+        
+        if (button != null)
+        {
+            button.onClick.AddListener(OnClick);
+        }
     }
 
-    void onClick()
+    void OnDestroy()
+    {
+        if (button != null)
+        {
+            button.onClick.RemoveListener(OnClick);
+        }
+    }
+
+    private void OnClick()
     {
         OnBoxClicked?.Invoke(myIndex, button);
+    }
+
+    public Button GetButton()
+    {
+        return button;
     }
 }

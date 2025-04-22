@@ -2,19 +2,22 @@ using System;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using UnityEngine.SceneManagement;
 
 public class GameManager : MonoBehaviour
 {
-
     [Header("UI")]
     [SerializeField] private TextMeshProUGUI turnText;
     [SerializeField] private Button resetButton;
 
+    // Constants
+    private const int BOARD_SIZE = 9;
+    
+    // Game state
     private PlayerTurn currentTurn;
-    private PlayerTurn?[] board = new PlayerTurn?[9];
-    private bool gameEnded = false;
-
+    private PlayerTurn?[] board = new PlayerTurn?[BOARD_SIZE];
+    private GameState gameState = GameState.InProgress;
+    
+    // Win combinations
     private readonly int[][] winCombos = new int[][]
     {
         new int[] {0, 1, 2},
@@ -24,14 +27,19 @@ public class GameManager : MonoBehaviour
         new int[] {1, 4, 7},
         new int[] {2, 5, 8},
         new int[] {0, 4, 8},
-        new int[] {2, 4, 6}
+        new int[] {2, 4, 6} 
     };
 
+    public static event Action<PlayerTurn> OnTurnChanged;
+    public static event Action<GameState, PlayerTurn?> OnGameStateChanged;
 
     private void Start()
     {
-        currentTurn = PlayerTurn.X;
-        UpdateTurnText();
+        InitializeGame();
+    }
+
+    private void OnEnable()
+    {
         OneBox.OnBoxClicked += HandleBoxClick;
         if (resetButton != null)
         {
@@ -39,7 +47,7 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    private void OnDestroy()
+    private void OnDisable()
     {
         OneBox.OnBoxClicked -= HandleBoxClick;
         if (resetButton != null)
@@ -48,37 +56,94 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    private void InitializeGame()
+    {
+        for (int i = 0; i < BOARD_SIZE; i++)
+        {
+            board[i] = null;
+        }
+        
+        currentTurn = PlayerTurn.X;
+        gameState = GameState.InProgress;
+        UpdateTurnText();
+        
+        OnTurnChanged?.Invoke(currentTurn);
+        OnGameStateChanged?.Invoke(gameState, null);
+    }
+
     private void HandleBoxClick(int index, Button button)
     {
-        if (gameEnded || board[index] != null) return;
+        if (gameState != GameState.InProgress || board[index] != null) 
+            return;
         
         board[index] = currentTurn;
-        TextMeshProUGUI text = button.GetComponentInChildren<TextMeshProUGUI>();
-        text.text = currentTurn.ToString();
-        button.interactable = false;
+        UpdateBoxUI(button, currentTurn);
 
         if (CheckWin())
         {
-            gameEnded = true;
-            turnText.text = $"Player {currentTurn} Wins!";
-            return;
+            EndGame(GameState.Won);
         }
-
-        if (CheckDraw())
+        else if (CheckDraw())
         {
-            gameEnded = true;
-            turnText.text = "It's a Draw!";
-            return;
+            EndGame(GameState.Draw);
         }
+        else
+        {
+            SwitchTurn();
+        }
+    }
 
+    private void UpdateBoxUI(Button button, PlayerTurn playerTurn)
+    {
+        TextMeshProUGUI text = button.GetComponentInChildren<TextMeshProUGUI>();
+        if (text != null)
+        {
+            text.text = playerTurn.ToString();
+        }
+        button.interactable = false;
+    }
+
+    private void SwitchTurn()
+    {
         currentTurn = currentTurn == PlayerTurn.X ? PlayerTurn.O : PlayerTurn.X;
         UpdateTurnText();
+        OnTurnChanged?.Invoke(currentTurn);
+    }
+
+    private void EndGame(GameState state)
+    {
+        gameState = state;
+        
+        if (state == GameState.Won)
+        {
+            turnText.text = $"Player {currentTurn} Wins!";
+        }
+        else if (state == GameState.Draw)
+        {
+            turnText.text = "It's a Draw!";
+        }
+        
+        OnGameStateChanged?.Invoke(gameState, currentTurn);
     }
 
     private void ResetGame()
     {
-        Scene currentScene = SceneManager.GetActiveScene();
-        SceneManager.LoadScene(currentScene.name);
+        OneBox[] boxes = FindObjectsByType<OneBox>(FindObjectsSortMode.None);
+        foreach (OneBox box in boxes)
+        {
+            Button button = box.GetButton();
+            if (button != null)
+            {
+                TextMeshProUGUI text = button.GetComponentInChildren<TextMeshProUGUI>();
+                if (text != null)
+                {
+                    text.text = string.Empty;
+                }
+                button.interactable = true;
+            }
+        }
+        
+        InitializeGame();
     }
 
     private bool CheckWin()
@@ -104,14 +169,12 @@ public class GameManager : MonoBehaviour
         }
         return true;
     }
+
     private void UpdateTurnText()
     {
-        turnText.text = currentTurn.ToString() + "'s Turn";
+        if (turnText != null)
+        {
+            turnText.text = currentTurn.ToString() + "'s Turn";
+        }
     }
-}
-
-enum PlayerTurn
-{
-    X,
-    O
 }
