@@ -3425,7 +3425,7 @@ GameObject:
   - component: {fileID: 2054540123}
   - component: {fileID: 2054540124}
   m_Layer: 0
-  m_Name: GameManager_
+  m_Name: TIc_GameManager_
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

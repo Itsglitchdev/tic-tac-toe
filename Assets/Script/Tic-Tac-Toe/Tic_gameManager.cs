@@ -3,7 +3,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class GameManager : MonoBehaviour
+public class Tic_gameManager : MonoBehaviour
 {
     [Header("UI")]
     [SerializeField] private TextMeshProUGUI turnText;
