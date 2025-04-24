@@ -14,7 +14,7 @@ public class MainMenu : MonoBehaviour
 
     private void Start()
     {
-        foreach (var gameButton in gameButtons)
+        foreach (GameButton gameButton in gameButtons)
         {
             if (gameButton.button != null)
             {
